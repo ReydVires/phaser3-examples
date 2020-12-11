@@ -4,38 +4,6 @@ $(document).ready(function () {
     var remote = (loc && loc.hostname && loc.hostname.indexOf('labs.phaser.io') !== -1);
     // var remote = true;
 
-    var versions = [
-        { val : 'dev', text: 'Dev Build' },
-        { val : '3.19.0', text: '3.19.0' },
-        { val : '3.18.1', text: '3.18.1' },
-        { val : '3.18.0', text: '3.18.0' },
-        { val : '3.17.0', text: '3.17.0' },
-        { val : '3.16.2', text: '3.16.2' },
-        { val : '3.16.1', text: '3.16.1' },
-        { val : '3.15.1', text: '3.15.1' },
-        { val : '3.15.0', text: '3.15.0' },
-        { val : '3.14.0', text: '3.14.0' },
-        { val : '3.13.0', text: '3.13.0' },
-        { val : '3.12.0', text: '3.12.0' },
-        { val : '3.11.0', text: '3.11.0' },
-        { val : '3.10.1', text: '3.10.1' },
-        { val : '3.10.0', text: '3.10.0' },
-        { val : '3.9.0', text: '3.9.0' },
-        { val : '3.8.0', text: '3.8.0' },
-        { val : '3.7.1', text: '3.7.1' },
-        { val : '3.6.0', text: '3.6.0' },
-        { val : '3.5.1', text: '3.5.1' },
-        { val : '3.5.0', text: '3.5.0' },
-        { val : '3.4.0', text: '3.4.0' },
-        { val : '3.3.0', text: '3.3.0' },
-        { val : '3.2.1', text: '3.2.1' },
-        { val : '3.2.0', text: '3.2.0' },
-        { val : '3.1.2', text: '3.1.2' },
-        { val : '3.1.1', text: '3.1.1' },
-        { val : '3.1.0', text: '3.1.0' },
-        { val : '3.0.0', text: '3.0.0' }
-    ];
-
     var forceMode = getQueryString('force');
     var filename = getQueryString('src');
     var phaserVersion = getQueryString('v', (remote) ? versions[1].val : 'dev');
@@ -137,19 +105,24 @@ $(document).ready(function () {
 
             phaserScript.onload = function ()
             {
-                //  Inject the example source
-                var phaserExample = document.createElement('script');
+                var jsPath = decodeURI(filename).split('\\').join('/');
 
-                phaserExample.type = 'text/javascript';
-                phaserExample.src = decodeURI(filename).split('\\').join('/');
+                //  Load it and check if we need to be a module or not
+                $.get(jsPath, '', function (srcFile) {
 
-                document.body.appendChild(phaserExample);
+                    //  Inject the example source
+                    var type = 'text/javascript';
 
-                $('#loading').hide();
-                $('#nav').show();
+                    if (srcFile.substr(0, 10) === '// #module')
+                    {
+                        type = 'module';
+                    }
 
-                phaserExample.onload = function ()
-                {
+                    $('<script />').attr('id', 'examplesrc').attr('type', type).text(srcFile).appendTo(document.body);
+
+                    $('#loading').hide();
+                    $('#nav').show();
+
                     if (window.game)
                     {
                         var type = (game.config.renderType === 2) ? 'Canvas' : 'WebGL';
@@ -161,7 +134,9 @@ $(document).ready(function () {
                     {
                         $('#forcemode').hide();
                     }
-                }
+
+                }, 'text');
+
             };
 
             if (remote && phaserVersion !== 'dev' && selected)
@@ -171,7 +146,7 @@ $(document).ready(function () {
             }
             else
             {
-                phaserScript.src = './build/' + phaserVersionJS + '?rnd=' + Math.random().toString();
+                phaserScript.src = './build/' + phaserVersionJS;
             }
 
             document.body.appendChild(phaserScript);
